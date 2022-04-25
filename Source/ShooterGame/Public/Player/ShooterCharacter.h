@@ -448,14 +448,26 @@ private:
 
 	//////////////////////////////////////////////////////////////////////////
 	// Rewind Time
+
+	/* Trigger Function */
+	void ActivateRewind();
+
 	/* Interpolation of Positions */
-	void RewindTime();
+	void RewindTime( float DeltaTime);
 
 	/* Function responsable for Adding Values in the lists*/
 	void RewindAddList();
 
 	/* Clear all the element of Both list */
 	void RewindClearList();
+
+	void RewindCoolDown();
+
+	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
+		float rewindCD;
+
+	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
+		float rewindCDDefault;
 
 	/* Max Rewind Seconds */
 	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
@@ -480,6 +492,8 @@ private:
 	/* List of Rotators that will interpolate*/
 	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
 		TArray<FRotator> rewindRot;
+
+	int index = 0;
 
 public:
 

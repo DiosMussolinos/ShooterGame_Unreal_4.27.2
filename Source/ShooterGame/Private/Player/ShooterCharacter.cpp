@@ -13,6 +13,7 @@
 /* Gabriel's Include */
 #include "Net/UnrealNetwork.h"
 #include "DrawDebugHelpers.h"
+#include "Math/UnrealMathUtility.h"
 #include "GenericPlatform/GenericPlatformProcess.h"
 
 static int32 NetVisualizeRelevancyTestPoints = 0;
@@ -904,7 +905,7 @@ void AShooterCharacter::SetupPlayerInputComponent(class UInputComponent* PlayerI
 
 	//My code Here
 	PlayerInputComponent->BindAction("Teleport", IE_Pressed, this, &AShooterCharacter::Teleport);
-	PlayerInputComponent->BindAction("Rewind", IE_Pressed, this, &AShooterCharacter::RewindTime);
+	PlayerInputComponent->BindAction("Rewind", IE_Pressed, this, &AShooterCharacter::ActivateRewind);
 }
 
 
@@ -1129,9 +1130,17 @@ void AShooterCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	/* JetPack Functions */
 	JetPack();
-	RewindAddList();
+
+	/* Teleport Functions */
 	TeleportTimer();
+
+	/* Rewind Functions */
+	RewindAddList();
+	RewindTime(DeltaSeconds);
+	RewindCoolDown();
+
 
 	if (bWantsToRunToggled && !IsRunning())
 	{
@@ -1249,14 +1258,14 @@ void AShooterCharacter::JetPack()
 
 			GetWorld()->GetTimerManager().SetTimer(TimerHandle, [&]()
 			{
-				FVector NewDirection = (GetCapsuleComponent()->GetUpVector());
+				FVector NewDirection = (GetCapsuleComponent()->GetUpVector() + (GetCapsuleComponent()->GetForwardVector() / 5));
 				LaunchCharacter(NewDirection * impulseForce, true, true);
 
 				//TODO: Apply Launch Character in Server
 				//FVector pos = GetActorLocation();
 				//JetPack_Server(pos);
 				
-			}, 0.001f, false);
+			}, 0.01f, false);
 			currentFuel -= GetWorld()->GetDeltaSeconds();
 		}
 
@@ -1340,9 +1349,32 @@ void AShooterCharacter::TeleportTimer()
 	}
 }
 
-void AShooterCharacter::RewindTime()
+void AShooterCharacter::ActivateRewind()
 {
+	index = rewindPos.Num() - 1;
+}
 
+void AShooterCharacter::RewindTime(float DeltaTime)
+{
+	if (rewindCD < 0)
+	{
+		while (index > 0)
+		{
+			SetActorLocation(FMath::Lerp(GetActorLocation(), rewindPos[index], 1.f));
+			SetActorRotation(FMath::Lerp(GetActorRotation(), rewindRot[index], 1.f));
+
+			if (GetActorLocation() == rewindPos[index])
+			{
+				index--;
+				
+				if (index == 0)
+				{
+					rewindCD = rewindCDDefault;
+					RewindClearList();
+				}
+			}
+		}
+	}
 }
 
 void AShooterCharacter::RewindAddList()
@@ -1351,7 +1383,7 @@ void AShooterCharacter::RewindAddList()
 
 	if (interval < 0)
 	{
-		int size = rewindPos.Num();
+		int size = rewindPos.Num() - 1;
 
 		if (size > maxInterval)
 		{
@@ -1362,8 +1394,7 @@ void AShooterCharacter::RewindAddList()
 
 		/* Add information to the list */
 		rewindPos.Add(GetActorLocation());
-		rewindRot.Add(GetActorRotation());
-
+		rewindRot.Add(Mesh1P->GetRelativeRotation());
 
 		/* Restart Time */
 		interval = intervalDefault;
@@ -1374,6 +1405,14 @@ void AShooterCharacter::RewindClearList()
 {
 	rewindPos.Empty();
 	rewindRot.Empty();
+}
+
+void AShooterCharacter::RewindCoolDown()
+{
+	if (rewindCD > 0)
+	{
+		rewindCD -= GetWorld()->GetDeltaSeconds();
+	}
 }
 
 //////////////////////////////////////////////////////////////////////////
