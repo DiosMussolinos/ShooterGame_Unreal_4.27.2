@@ -18,6 +18,8 @@ class AShooterCharacter : public ACharacter
 	/** spawn inventory, setup initial variables */
 	virtual void PostInitializeComponents() override;
 
+	virtual void BeginPlay() override;
+
 	/** Update the character. (Running, health etc). */
 	virtual void Tick(float DeltaSeconds) override;
 
@@ -397,9 +399,7 @@ private:
 	//////////////////////////////////////////////////////////////////////////
 	// Damage & death
 
-		//////////////////////////////////////////////////////////////////////////
-	
-	
+	//////////////////////////////////////////////////////////////////////////
 	//Stuned
 	/* Freezed || Stuned */
 	UPROPERTY(EditAnywhere, Replicated, Category = "MovementEffects")
@@ -431,32 +431,53 @@ private:
 	/* player teleport 10m Foward*/
 	void Teleport();
 
+	/* Timer Update of Telepor */
 	void TeleportTimer();
 
+	/* Max Distance Teleported */
 	UPROPERTY(EditAnywhere, Replicated, Category = "Teleport")
 		float distance;
 
+	/* Teleport Cooldown */
 	UPROPERTY(EditAnywhere, Replicated, Category = "Teleport")
 		float teleportCD;
 
+	/* Teleport Cooldown Default */
 	UPROPERTY(EditAnywhere, Replicated, Category = "Teleport")
 		float teleportCDDefault;
 
 	//////////////////////////////////////////////////////////////////////////
 	// Rewind Time
+	/* Interpolation of Positions */
 	void RewindTime();
 
+	/* Function responsable for Adding Values in the lists*/
 	void RewindAddList();
 
-	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
-		float RewindSeconds;
+	/* Clear all the element of Both list */
+	void RewindClearList();
 
+	/* Max Rewind Seconds */
 	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
-		float listInterval;
+		float rewindSeconds;
 
+	/* Interval Of addiction */
+	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
+		float interval;
+
+	/* Default interval */
+	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
+		float intervalDefault;
+
+	/* Max Indexes that the list can have -> RewindSeconds / intervalDefault */
+	UPROPERTY(VisibleAnywhere, Replicated, Category = "Rewind")
+		float maxInterval;
+
+	/* List of Positions that will interpolate*/
 	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
 		TArray<FVector> rewindPos;
 
+	/* List of Rotators that will interpolate*/
 	UPROPERTY(EditAnywhere, Replicated, Category = "Rewind")
 		TArray<FRotator> rewindRot;
 

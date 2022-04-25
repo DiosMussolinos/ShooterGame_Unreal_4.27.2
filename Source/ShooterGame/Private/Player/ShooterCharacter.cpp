@@ -110,6 +110,13 @@ void AShooterCharacter::PostInitializeComponents()
 	}
 }
 
+void AShooterCharacter::BeginPlay()
+{
+	Super::BeginPlay();
+
+	maxInterval = rewindSeconds / intervalDefault;
+}
+
 void AShooterCharacter::Destroyed()
 {
 	Super::Destroyed();
@@ -345,6 +352,9 @@ void AShooterCharacter::OnDeath(float KillingDamage, struct FDamageEvent const& 
 	SetReplicatingMovement(false);
 	TearOff();
 	bIsDying = true;
+	
+	/* Clear the arrays of Positions And Rotators */
+	RewindClearList();
 
 	if (GetLocalRole() == ROLE_Authority)
 	{
@@ -1239,7 +1249,7 @@ void AShooterCharacter::JetPack()
 
 			GetWorld()->GetTimerManager().SetTimer(TimerHandle, [&]()
 			{
-				FVector NewDirection = (GetCapsuleComponent()->GetUpVector() + GetCapsuleComponent()->GetForwardVector() / 2.5f);
+				FVector NewDirection = (GetCapsuleComponent()->GetUpVector());
 				LaunchCharacter(NewDirection * impulseForce, true, true);
 
 				//TODO: Apply Launch Character in Server
@@ -1337,17 +1347,33 @@ void AShooterCharacter::RewindTime()
 
 void AShooterCharacter::RewindAddList()
 {
-	while (IsAlive())
-	{
-		FTimerHandle TimerHandle;
+	interval -= GetWorld()->GetDeltaSeconds();
 
-		/* Every 0.25f seconds, will add to the list of Positions and Rotations */
-		GetWorld()->GetTimerManager().SetTimer(TimerHandle, [&]()
+	if (interval < 0)
+	{
+		int size = rewindPos.Num();
+
+		if (size > maxInterval)
 		{
-			rewindPos.Add(GetActorLocation());
-			rewindRot.Add(GetActorRotation());
-		}, 10, false);
+			/* Add information to the list */
+			rewindPos.RemoveAt(0);
+			rewindRot.RemoveAt(0);
+		}
+
+		/* Add information to the list */
+		rewindPos.Add(GetActorLocation());
+		rewindRot.Add(GetActorRotation());
+
+
+		/* Restart Time */
+		interval = intervalDefault;
 	}
+}
+
+void AShooterCharacter::RewindClearList()
+{
+	rewindPos.Empty();
+	rewindRot.Empty();
 }
 
 //////////////////////////////////////////////////////////////////////////
